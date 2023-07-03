@@ -44,11 +44,96 @@
         <div id="qrcode" class="mt-4"></div>
 
         <button id="view-qr-codes" class="btn btn-primary mt-3">QR Kodlarını Görüntüle</button>
+        <button id="delete-history" class="btn btn-danger mt-3">Geçmiş Kayıtları Sil</button>
+
         <div id="qr-code-list" class="mt-4"></div>
     </div>
 
     <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
     <script>
+        function createDeleteButton(qrCode) {
+            var deleteButton = document.createElement("button");
+            deleteButton.classList.add("btn", "btn-danger", "ms-2");
+            deleteButton.textContent = "Sil";
+            deleteButton.addEventListener("click", function () {
+                var qrCodes = JSON.parse(localStorage.getItem("qrCodes")) || [];
+                qrCodes = qrCodes.filter(function (item) {
+                    return item.url !== qrCode.url || item.filename !== qrCode.filename;
+                });
+                localStorage.setItem("qrCodes", JSON.stringify(qrCodes));
+                loadQRCodeList();
+            });
+            return deleteButton;
+        }
+
+        function createDownloadButton(qrCode) {
+            var downloadButton = document.createElement("a");
+            downloadButton.classList.add("btn", "btn-primary", "ms-2");
+            downloadButton.textContent = "İndir";
+            downloadButton.href = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(
+                qrCode.url
+            )}&size=100x100`;
+            downloadButton.download = qrCode.filename + ".png";
+            return downloadButton;
+        }
+
+        function loadQRCodeList() {
+            var qrCodes = JSON.parse(localStorage.getItem("qrCodes")) || [];
+
+            var qrCodeList = document.getElementById("qr-code-list");
+            qrCodeList.innerHTML = "";
+
+            if (qrCodes.length === 0) {
+                qrCodeList.innerHTML = "Henüz kaydedilmiş QR kodu bulunmamaktadır.";
+            } else {
+                var table = document.createElement("table");
+                table.classList.add("table");
+                var thead = document.createElement("thead");
+                var tr = document.createElement("tr");
+                var th1 = document.createElement("th");
+                th1.textContent = "Dosya İsmi";
+                var th2 = document.createElement("th");
+                th2.textContent = "URL";
+                var th3 = document.createElement("th");
+                th3.textContent = "QR Kodu";
+                var th4 = document.createElement("th");
+                th4.textContent = "İşlemler";
+                tr.appendChild(th1);
+                tr.appendChild(th2);
+                tr.appendChild(th3);
+                tr.appendChild(th4);
+                thead.appendChild(tr);
+                table.appendChild(thead);
+
+                var tbody = document.createElement("tbody");
+                qrCodes.forEach(function (qrCode) {
+                    var tr = document.createElement("tr");
+                    var td1 = document.createElement("td");
+                    td1.textContent = qrCode.filename;
+                    var td2 = document.createElement("td");
+                    td2.textContent = qrCode.url;
+                    var td3 = document.createElement("td");
+                    var qrCodeImg = document.createElement("img");
+                    qrCodeImg.src = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(
+                        qrCode.url
+                    )}&size=100x100`;
+                    qrCodeImg.alt = "QR Code";
+                    td3.appendChild(qrCodeImg);
+                    var td4 = document.createElement("td");
+                    td4.appendChild(createDeleteButton(qrCode));
+                    td4.appendChild(createDownloadButton(qrCode));
+                    tr.appendChild(td1);
+                    tr.appendChild(td2);
+                    tr.appendChild(td3);
+                    tr.appendChild(td4);
+                    tbody.appendChild(tr);
+                });
+
+                table.appendChild(tbody);
+                qrCodeList.appendChild(table);
+            }
+        }
+
         document.getElementById("qr-form").addEventListener("submit", function (event) {
             event.preventDefault();
             var url = document.getElementById("url-input").value;
@@ -80,46 +165,19 @@
             var qrCodes = JSON.parse(localStorage.getItem("qrCodes")) || [];
             qrCodes.push(qrCodeData);
             localStorage.setItem("qrCodes", JSON.stringify(qrCodes));
+            loadQRCodeList();
         });
 
         document.getElementById("view-qr-codes").addEventListener("click", function () {
-            var qrCodes = JSON.parse(localStorage.getItem("qrCodes")) || [];
-
-            var qrCodeList = document.getElementById("qr-code-list");
-            qrCodeList.innerHTML = "";
-
-            if (qrCodes.length === 0) {
-                qrCodeList.innerHTML = "Henüz kaydedilmiş QR kodu bulunmamaktadır.";
-            } else {
-                var table = document.createElement("table");
-                table.classList.add("table");
-                var thead = document.createElement("thead");
-                var tr = document.createElement("tr");
-                var th1 = document.createElement("th");
-                th1.textContent = "Dosya İsmi";
-                var th2 = document.createElement("th");
-                th2.textContent = "URL";
-                tr.appendChild(th1);
-                tr.appendChild(th2);
-                thead.appendChild(tr);
-                table.appendChild(thead);
-
-                var tbody = document.createElement("tbody");
-                qrCodes.forEach(function (qrCode) {
-                    var tr = document.createElement("tr");
-                    var td1 = document.createElement("td");
-                    td1.textContent = qrCode.filename;
-                    var td2 = document.createElement("td");
-                    td2.textContent = qrCode.url;
-                    tr.appendChild(td1);
-                    tr.appendChild(td2);
-                    tbody.appendChild(tr);
-                });
-
-                table.appendChild(tbody);
-                qrCodeList.appendChild(table);
-            }
+            loadQRCodeList();
         });
+
+        document.getElementById("delete-history").addEventListener("click", function () {
+            localStorage.removeItem("qrCodes");
+            document.getElementById("qr-code-list").innerHTML = "Geçmiş kayıtları başarıyla silindi.";
+        });
+
+        loadQRCodeList();
     </script>
 </body>
 
