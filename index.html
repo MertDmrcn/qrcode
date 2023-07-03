@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Kod Oluşturucu</title>
+    <!-- Bootstrap Css -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+</head>
+
+<body>
+    <div class="container">
+        <h1 class="text-center">QR Kod Oluşturucu</h1>
+        <form id="qr-form">
+            <div class="form-group">
+                <label for="url-input">QR Kod Oluşturulacak URL:</label>
+                <input type="text" class="form-control" id="url-input" required>
+            </div>
+            <div class="form-group">
+                <label for="filename-input">Dosya İsmi:</label>
+                <input type="text" class="form-control" id="filename-input" required>
+            </div>
+            <div class="form-group">
+                <label for="width-input">Genişlik (px):</label>
+                <input type="number" class="form-control" id="width-input" required>
+            </div>
+            <div class="form-group">
+                <label for="height-input">Yükseklik (px):</label>
+                <input type="number" class="form-control" id="height-input" required>
+            </div>
+            <div class="form-group">
+                <label for="format-select">Dosya Formatı:</label>
+                <select class="form-control" id="format-select">
+                    <option value="svg">SVG</option>
+                    <option value="webp">WebP</option>
+                    <option value="png">PNG</option>
+                    <option value="jpeg">JPEG</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary mt-3">QR Kodu Oluştur</button>
+        </form>
+        <div id="qrcode" class="mt-4"></div>
+
+        <button id="view-qr-codes" class="btn btn-primary mt-3">QR Kodlarını Görüntüle</button>
+        <div id="qr-code-list" class="mt-4"></div>
+    </div>
+
+    <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
+    <script>
+        document.getElementById("qr-form").addEventListener("submit", function (event) {
+            event.preventDefault();
+            var url = document.getElementById("url-input").value;
+            var filename = document.getElementById("filename-input").value;
+            var width = document.getElementById("width-input").value;
+            var height = document.getElementById("height-input").value;
+            var format = document.getElementById("format-select").value;
+
+            var qrcodeDiv = document.getElementById("qrcode");
+            qrcodeDiv.innerHTML = "";
+
+            var qrcode = new QRCode(qrcodeDiv, {
+                text: url,
+                width: width,
+                height: height
+            });
+
+            var downloadLink = document.createElement("a");
+            downloadLink.href = qrcodeDiv.firstChild.toDataURL("image/" + format);
+            downloadLink.download = filename + "." + format;
+            downloadLink.innerHTML = "QR Kodu İndir";
+            qrcodeDiv.appendChild(downloadLink);
+
+            // QR kodu ve bilgilerini local storage'a kaydet
+            var qrCodeData = {
+                url: url,
+                filename: filename
+            };
+            var qrCodes = JSON.parse(localStorage.getItem("qrCodes")) || [];
+            qrCodes.push(qrCodeData);
+            localStorage.setItem("qrCodes", JSON.stringify(qrCodes));
+        });
+
+        document.getElementById("view-qr-codes").addEventListener("click", function () {
+            var qrCodes = JSON.parse(localStorage.getItem("qrCodes")) || [];
+
+            var qrCodeList = document.getElementById("qr-code-list");
+            qrCodeList.innerHTML = "";
+
+            if (qrCodes.length === 0) {
+                qrCodeList.innerHTML = "Henüz kaydedilmiş QR kodu bulunmamaktadır.";
+            } else {
+                var table = document.createElement("table");
+                table.classList.add("table");
+                var thead = document.createElement("thead");
+                var tr = document.createElement("tr");
+                var th1 = document.createElement("th");
+                th1.textContent = "Dosya İsmi";
+                var th2 = document.createElement("th");
+                th2.textContent = "URL";
+                tr.appendChild(th1);
+                tr.appendChild(th2);
+                thead.appendChild(tr);
+                table.appendChild(thead);
+
+                var tbody = document.createElement("tbody");
+                qrCodes.forEach(function (qrCode) {
+                    var tr = document.createElement("tr");
+                    var td1 = document.createElement("td");
+                    td1.textContent = qrCode.filename;
+                    var td2 = document.createElement("td");
+                    td2.textContent = qrCode.url;
+                    tr.appendChild(td1);
+                    tr.appendChild(td2);
+                    tbody.appendChild(tr);
+                });
+
+                table.appendChild(tbody);
+                qrCodeList.appendChild(table);
+            }
+        });
+    </script>
+</body>
+
+</html>
